@@ -1,5 +1,10 @@
-import 'package:expense_tracker/models/categorymodel.dart';
+import 'package:expense_tracker/blocs/transactions/transaction_bloc.dart';
+import 'package:expense_tracker/blocs/transactions/transaction_event.dart';
+import 'package:expense_tracker/blocs/transactions/transaction_state.dart';
+import 'package:expense_tracker/models/category_model.dart';
+import 'package:expense_tracker/models/transaction_model.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class CategorySelectionScreen extends StatefulWidget {
@@ -12,42 +17,62 @@ class CategorySelectionScreen extends StatefulWidget {
 class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
   bool isIncome = false;
 
+  final _amountController = TextEditingController();
+  final _noteController = TextEditingController();
+  DateTime selectedDate = DateTime.now();
+
   final List<CategoryModel> expenseCategories = [
-    CategoryModel(name: 'Food', icon: Icons.fastfood),
-    CategoryModel(name: 'Transport', icon: Icons.directions_car),
-    CategoryModel(name: 'Shopping', icon: Icons.shopping_bag),
-    CategoryModel(name: 'Rent', icon: Icons.home),
+    CategoryModel(name: 'Food', iconCodePoint: Icons.fastfood.codePoint, id: DateTime.now().microsecondsSinceEpoch),
+    CategoryModel(
+        name: 'Transport', iconCodePoint: Icons.directions_car.codePoint, id: DateTime.now().microsecondsSinceEpoch),
+    CategoryModel(
+        name: 'Shopping', iconCodePoint: Icons.shopping_bag.codePoint, id: DateTime.now().microsecondsSinceEpoch),
+    CategoryModel(name: 'Rent', iconCodePoint: Icons.home.codePoint, id: DateTime.now().microsecondsSinceEpoch),
   ];
 
   final List<CategoryModel> incomeCategories = [
-    CategoryModel(name: 'Salary', icon: Icons.attach_money),
-    CategoryModel(name: 'Bonus', icon: Icons.card_giftcard),
-    CategoryModel(name: 'Investments', icon: Icons.trending_up),
+    CategoryModel(
+        name: 'Salary', iconCodePoint: Icons.attach_money.codePoint, id: DateTime.now().microsecondsSinceEpoch),
+    CategoryModel(
+        name: 'Bonus', iconCodePoint: Icons.card_giftcard.codePoint, id: DateTime.now().microsecondsSinceEpoch),
+    CategoryModel(
+        name: 'Investments', iconCodePoint: Icons.trending_up.codePoint, id: DateTime.now().microsecondsSinceEpoch),
   ];
+
+  @override
+  void dispose() {
+    _amountController.dispose();
+    _noteController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final categories = isIncome ? incomeCategories : expenseCategories;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Select Category', style: GoogleFonts.poppins()),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            tooltip: "Add Category",
-            onPressed: () {
-              // Show dialog or navigate to add category
-            },
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          const SizedBox(height: 12),
-          _buildToggleSwitch(),
-          Expanded(child: _buildCategoryGrid(categories)),
-        ],
+    return BlocListener<TransactionBloc, TransactionState>(
+      listener: (context, state) {
+        if (state is TransactionLoaded) {
+          Navigator.of(context).popUntil((route) => route.isFirst); // Pop back to HomeScreen
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('Select Category', style: GoogleFonts.poppins()),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.add),
+              tooltip: "Add Category",
+              onPressed: () {},
+            ),
+          ],
+        ),
+        body: Column(
+          children: [
+            const SizedBox(height: 12),
+            _buildToggleSwitch(),
+            Expanded(child: _buildCategoryGrid(categories)),
+          ],
+        ),
       ),
     );
   }
@@ -88,9 +113,7 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
       itemBuilder: (context, index) {
         final category = categories[index];
         return GestureDetector(
-          onTap: () {
-            _showAddTransactionSheet(category);
-          },
+          onTap: () => _showAddTransactionSheet(category),
           child: Container(
             decoration: BoxDecoration(
               color: Colors.grey.shade100,
@@ -101,7 +124,11 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(category.icon, size: 28, color: Colors.black87),
+                Icon(
+                  IconData(category.iconCodePoint, fontFamily: category.fontFamily ?? 'MaterialIcons'),
+                  size: 28,
+                  color: Colors.black87,
+                ),
                 const SizedBox(height: 6),
                 Text(
                   category.name,
@@ -118,11 +145,43 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
     );
   }
 
-  Widget _buildTransactionForm(CategoryModel category) {
-    final _amountController = TextEditingController();
-    final _noteController = TextEditingController();
-    DateTime selectedDate = DateTime.now();
+  void _showAddTransactionSheet(CategoryModel category) {
+    _amountController.clear();
+    _noteController.clear();
+    selectedDate = DateTime.now();
 
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+            left: 16,
+            right: 16,
+            top: 20,
+          ),
+          child: Wrap(
+            children: [
+              Center(
+                child: Text(
+                  "Add ${category.name} Transaction",
+                  style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+              ),
+              const SizedBox(height: 20),
+              _buildTransactionForm(context, category),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTransactionForm(BuildContext context, CategoryModel category) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -161,7 +220,7 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
                   lastDate: DateTime.now(),
                 );
                 if (picked != null) {
-                  selectedDate = picked;
+                  setState(() => selectedDate = picked);
                 }
               },
               child: const Text("Change"),
@@ -173,49 +232,33 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
           width: double.infinity,
           child: ElevatedButton(
             onPressed: () {
-              // Save to Hive or dispatch to BLoC
+              final amount = double.tryParse(_amountController.text) ?? 0.0;
+              final note = _noteController.text.trim();
+
+              if (amount <= 0) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Please enter a valid amount")),
+                );
+                return;
+              }
+
+              final transaction = TransactionModel(
+                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                  amount: amount,
+                  note: note,
+                  date: selectedDate,
+                  categoryName: category.name,
+                  isIncome: isIncome,
+                  icon: category.iconCodePoint);
+
+              context.read<TransactionBloc>().add(AddTransaction(transaction));
               Navigator.pop(context);
             },
             child: const Text("Add Transaction"),
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
       ],
-    );
-  }
-
-  void _showAddTransactionSheet(CategoryModel category) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-            left: 16,
-            right: 16,
-            top: 20,
-          ),
-          child: Wrap(
-            children: [
-              Center(
-                child: Text(
-                  "Add ${category.name} Transaction",
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              _buildTransactionForm(category),
-            ],
-          ),
-        );
-      },
     );
   }
 }
