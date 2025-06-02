@@ -1,3 +1,4 @@
+import 'package:expense_tracker/screens/add_transactions_screen.dart';
 import 'package:expense_tracker/screens/homescreen.dart';
 import 'package:expense_tracker/screens/splash_screen.dart';
 import 'package:flutter/material.dart';
@@ -20,6 +21,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/': (context) => SplashScreen(),
         '/home': (context) => HomeScreen(),
+        '/addTransaction': (context) => AddTransactionScreen(isIncome: false)
       },
     );
   }
