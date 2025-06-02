@@ -51,6 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Navigator.push(context, MaterialPageRoute(builder: (_) => const Text("data")));
               break;
             case "reports":
+              Navigator.pushNamed(context, '/reports');
               // Navigator.push to reports screen
               break;
             case "settings":
@@ -81,7 +82,8 @@ class _HomeScreenState extends State<HomeScreen> {
             if (state is TransactionLoading) {
               return const Center(child: CircularProgressIndicator());
             } else if (state is TransactionLoaded) {
-              final transactions = state.transactions;
+              final transactions =
+                  state.transactions.where((items) => items.date.month == DateTime.now().month).toList();
               final totalIncome = _getTotalIncome(transactions);
               final totalExpense = _getTotalExpense(transactions);
               final totalBalance = totalIncome - totalExpense;
@@ -171,7 +173,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ...entry.value.map((txn) {
             return Card(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              elevation: 3,
+              elevation: .2,
               margin: const EdgeInsets.only(bottom: 10),
               child: ListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

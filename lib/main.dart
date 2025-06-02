@@ -1,5 +1,6 @@
 import 'package:expense_tracker/blocs/transactions/transaction_bloc.dart';
 import 'package:expense_tracker/screens/homescreen.dart';
+import 'package:expense_tracker/screens/reports_screen.dart';
 import 'package:expense_tracker/screens/splash_screen.dart';
 import 'package:expense_tracker/services/hive_service.dart';
 import 'package:flutter/material.dart';
@@ -29,7 +30,8 @@ class MyApp extends StatelessWidget {
       themeMode: ThemeMode.light,
       routes: {
         '/': (context) => SplashScreen(),
-        '/home': (context) => HomeScreen(),
+        '/home': (context) => const HomeScreen(),
+        '/reports': (context) => ReportScreen()
       },
     );
   }
