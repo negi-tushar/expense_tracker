@@ -1,4 +1,7 @@
+import 'package:expense_tracker/blocs/bloc/category_bloc.dart';
+import 'package:expense_tracker/blocs/bloc/category_event.dart';
 import 'package:expense_tracker/blocs/transactions/transaction_bloc.dart';
+import 'package:expense_tracker/screens/add_category_screen.dart';
 import 'package:expense_tracker/screens/homescreen.dart';
 import 'package:expense_tracker/screens/reports_screen.dart';
 import 'package:expense_tracker/screens/splash_screen.dart';
@@ -12,6 +15,9 @@ void main() async {
   runApp(MultiBlocProvider(providers: [
     BlocProvider<TransactionBloc>(
       create: (_) => TransactionBloc(),
+    ),
+    BlocProvider<CategoryBloc>(
+      create: (context) => CategoryBloc()..add(InitializeCategories()),
     ),
   ], child: const MyApp()));
 }
@@ -31,7 +37,8 @@ class MyApp extends StatelessWidget {
       routes: {
         '/': (context) => SplashScreen(),
         '/home': (context) => const HomeScreen(),
-        '/reports': (context) => ReportScreen()
+        '/reports': (context) => const ReportScreen(),
+        '/addCategory': (context) => const AddCategoryScreen()
       },
     );
   }

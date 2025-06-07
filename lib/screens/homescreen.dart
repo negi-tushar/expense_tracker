@@ -6,6 +6,7 @@ import 'package:expense_tracker/screens/category_screen.dart';
 import 'package:expense_tracker/widgets/app_drawer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
@@ -70,8 +71,11 @@ class _HomeScreenState extends State<HomeScreen> {
             MaterialPageRoute(builder: (_) => const CategorySelectionScreen()),
           );
         },
-        label: Text("Add Transaction", style: GoogleFonts.poppins(fontWeight: FontWeight.w500)),
-        icon: const Icon(Icons.add),
+        label: Text("Add Transaction", style: GoogleFonts.poppins(fontWeight: FontWeight.w500, color: Colors.white)),
+        icon: const Icon(
+          Icons.add,
+          color: Colors.white,
+        ),
         backgroundColor: Colors.black87,
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
@@ -171,41 +175,75 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           ...entry.value.map((txn) {
-            return Card(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              elevation: .2,
-              margin: const EdgeInsets.only(bottom: 10),
-              child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                leading: CircleAvatar(
-                  radius: 24,
-                  backgroundColor: txn.isIncome ? Colors.green[100] : Colors.red[100],
-                  child: Icon(
-                    IconData(txn.icon, fontFamily: 'MaterialIcons'),
-                    color: Colors.black,
+            return Slidable(
+              key: ValueKey(txn.id),
+              endActionPane: ActionPane(
+                motion: const StretchMotion(),
+                children: [
+                  // EDIT ACTION
+                  SlidableAction(
+                    onPressed: (context) {
+                      // Navigate to Category screen for editing
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => CategorySelectionScreen(existingTransaction: txn),
+                        ),
+                      );
+                    },
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    icon: Icons.edit,
+                    label: 'Edit',
                   ),
-                ),
-                title: Text(
-                  txn.categoryName,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                  // DELETE ACTION
+                  SlidableAction(
+                    onPressed: (context) {
+                      context.read<TransactionBloc>().add(DeleteTransaction(txn.id));
+                    },
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    icon: Icons.delete,
+                    label: 'Delete',
                   ),
-                ),
-                subtitle: txn.note.isNotEmpty
-                    ? Text(
-                        txn.note,
-                        style: const TextStyle(color: Colors.black54),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      )
-                    : null,
-                trailing: Text(
-                  "${txn.isIncome ? '+' : '-'}₹${txn.amount.toStringAsFixed(2)}",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: txn.isIncome ? Colors.green : Colors.red,
+                ],
+              ),
+              child: Card(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: .2,
+                margin: const EdgeInsets.only(bottom: 10),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  leading: CircleAvatar(
+                    radius: 24,
+                    backgroundColor: txn.isIncome ? Colors.green[100] : Colors.red[100],
+                    child: Icon(
+                      IconData(txn.icon, fontFamily: 'MaterialIcons'),
+                      color: Colors.black,
+                    ),
+                  ),
+                  title: Text(
+                    txn.categoryName,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  subtitle: txn.note.isNotEmpty
+                      ? Text(
+                          txn.note,
+                          style: const TextStyle(color: Colors.black54),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        )
+                      : null,
+                  trailing: Text(
+                    "${txn.isIncome ? '+' : '-'}₹${txn.amount.toStringAsFixed(2)}",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: txn.isIncome ? Colors.green : Colors.red,
+                    ),
                   ),
                 ),
               ),

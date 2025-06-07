@@ -18,9 +18,9 @@ class CategoryModelAdapter extends TypeAdapter<CategoryModel> {
     };
     return CategoryModel(
       name: fields[0] as String,
+      isIncome: fields[4] as bool,
       iconCodePoint: fields[1] as int,
       fontFamily: fields[2] as String?,
-      id: fields[3] as int,
     );
   }
 
@@ -34,8 +34,8 @@ class CategoryModelAdapter extends TypeAdapter<CategoryModel> {
       ..write(obj.iconCodePoint)
       ..writeByte(2)
       ..write(obj.fontFamily)
-      ..writeByte(3)
-      ..write(obj.id);
+      ..writeByte(4)
+      ..write(obj.isIncome);
   }
 
   @override

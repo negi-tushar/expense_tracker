@@ -1,14 +1,20 @@
+import 'package:expense_tracker/blocs/bloc/category_bloc.dart';
+import 'package:expense_tracker/blocs/bloc/category_event.dart';
+import 'package:expense_tracker/blocs/bloc/category_state.dart';
 import 'package:expense_tracker/blocs/transactions/transaction_bloc.dart';
 import 'package:expense_tracker/blocs/transactions/transaction_event.dart';
 import 'package:expense_tracker/blocs/transactions/transaction_state.dart';
 import 'package:expense_tracker/models/category_model.dart';
 import 'package:expense_tracker/models/transaction_model.dart';
+import 'package:expense_tracker/screens/add_category_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class CategorySelectionScreen extends StatefulWidget {
-  const CategorySelectionScreen({super.key});
+  final TransactionModel? existingTransaction;
+
+  const CategorySelectionScreen({super.key, this.existingTransaction});
 
   @override
   State<CategorySelectionScreen> createState() => _CategorySelectionScreenState();
@@ -21,23 +27,22 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
   final _noteController = TextEditingController();
   DateTime selectedDate = DateTime.now();
 
-  final List<CategoryModel> expenseCategories = [
-    CategoryModel(name: 'Food', iconCodePoint: Icons.fastfood.codePoint, id: DateTime.now().microsecondsSinceEpoch),
-    CategoryModel(
-        name: 'Transport', iconCodePoint: Icons.directions_car.codePoint, id: DateTime.now().microsecondsSinceEpoch),
-    CategoryModel(
-        name: 'Shopping', iconCodePoint: Icons.shopping_bag.codePoint, id: DateTime.now().microsecondsSinceEpoch),
-    CategoryModel(name: 'Rent', iconCodePoint: Icons.home.codePoint, id: DateTime.now().microsecondsSinceEpoch),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    // If we are editing, pre-fill the state from the transaction
+    if (widget.existingTransaction != null) {
+      final txn = widget.existingTransaction!;
+      setState(() {
+        isIncome = txn.isIncome;
+        // The rest of the data will be pre-filled when the bottom sheet is shown
+      });
+    }
+  }
 
-  final List<CategoryModel> incomeCategories = [
-    CategoryModel(
-        name: 'Salary', iconCodePoint: Icons.attach_money.codePoint, id: DateTime.now().microsecondsSinceEpoch),
-    CategoryModel(
-        name: 'Bonus', iconCodePoint: Icons.card_giftcard.codePoint, id: DateTime.now().microsecondsSinceEpoch),
-    CategoryModel(
-        name: 'Investments', iconCodePoint: Icons.trending_up.codePoint, id: DateTime.now().microsecondsSinceEpoch),
-  ];
+  // REMOVED: No longer need local lists
+  // final List<CategoryModel> expenseCategories = [];
+  // final List<CategoryModel> incomeCategories = [];
 
   @override
   void dispose() {
@@ -48,7 +53,9 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final categories = isIncome ? incomeCategories : expenseCategories;
+    // REMOVED: This logic moves inside the BlocBuilder
+    // final categories = isIncome ? incomeCategories : expenseCategories;
+
     return BlocListener<TransactionBloc, TransactionState>(
       listener: (context, state) {
         if (state is TransactionLoaded) {
@@ -62,24 +69,59 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
             IconButton(
               icon: const Icon(Icons.add),
               tooltip: "Add Category",
-              onPressed: () {},
+              onPressed: () {
+                // Assuming you have a named route for AddCategoryScreen
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const AddCategoryScreen()));
+              },
             ),
           ],
         ),
-        body: Column(
-          children: [
-            const SizedBox(height: 12),
-            _buildToggleSwitch(),
-            Expanded(child: _buildCategoryGrid(categories)),
-          ],
+        // MODIFIED: Wrap the body's content with a BlocBuilder
+        body: BlocBuilder<CategoryBloc, CategoryState>(
+          builder: (context, state) {
+            // Handle Loading State
+            if (state is CategoryLoading || state is CategoryInitial) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            // Handle Error State
+            if (state is CategoryError) {
+              return Center(child: Text('Error: ${state.message}'));
+            }
+
+            // Handle Loaded State
+            if (state is CategoryLoaded) {
+              final categories = isIncome ? state.incomeCategories : state.expenseCategories;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 12),
+                  _buildToggleSwitch(),
+                  Expanded(
+                    child: categories.isEmpty
+                        ? Center(
+                            child: Text(
+                              "No ${isIncome ? 'income' : 'expense'} categories found.\nAdd one using the '+' button!",
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.poppins(color: Colors.grey),
+                            ),
+                          )
+                        : _buildCategoryWrap(categories),
+                  ),
+                ],
+              );
+            }
+
+            // Fallback for any other state
+            return const Center(child: Text("Something went wrong."));
+          },
         ),
       ),
     );
   }
 
   Widget _buildToggleSwitch() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+    return Center(
       child: ToggleButtons(
         isSelected: [!isIncome, isIncome],
         borderRadius: BorderRadius.circular(10),
@@ -100,55 +142,56 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
     );
   }
 
-  Widget _buildCategoryGrid(List<CategoryModel> categories) {
-    return GridView.builder(
+  Widget _buildCategoryWrap(List<CategoryModel> categories) {
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
-      itemCount: categories.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 1,
-      ),
-      itemBuilder: (context, index) {
-        final category = categories[index];
-        return GestureDetector(
-          onTap: () => _showAddTransactionSheet(category),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade300),
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+      child: Wrap(
+        spacing: 16.0,
+        runSpacing: 16.0,
+        alignment: WrapAlignment.center,
+        runAlignment: WrapAlignment.center,
+        children: categories.map((category) {
+          return GestureDetector(
+            onTap: () => _showAddTransactionSheet(category),
+            onLongPress: () {
+              context.read<CategoryBloc>().add(DeleteCategory(category.key));
+            },
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
                   IconData(category.iconCodePoint, fontFamily: category.fontFamily ?? 'MaterialIcons'),
-                  size: 28,
+                  size: 32,
                   color: Colors.black87,
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 8),
                 Text(
                   category.name,
                   style: GoogleFonts.poppins(fontSize: 13),
                   textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
-          ),
-        );
-      },
+          );
+        }).toList(),
+      ),
     );
   }
 
+  // _showAddTransactionSheet and _buildTransactionForm methods remain the same...
   void _showAddTransactionSheet(CategoryModel category) {
-    _amountController.clear();
-    _noteController.clear();
-    selectedDate = DateTime.now();
+    // If we are editing, pre-fill the controllers
+    if (widget.existingTransaction != null) {
+      final txn = widget.existingTransaction!;
+      _amountController.text = txn.amount.toString();
+      _noteController.text = txn.note;
+      selectedDate = txn.date;
+    } else {
+      // If adding a new one, clear the controllers
+      _amountController.clear();
+      _noteController.clear();
+      selectedDate = DateTime.now();
+    }
 
     showModalBottomSheet(
       context: context,
@@ -242,17 +285,39 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
                 return;
               }
 
-              final transaction = TransactionModel(
+              if (widget.existingTransaction != null) {
+                // UPDATE EXISTING TRANSACTION
+                final updatedTransaction = TransactionModel(
+                  id: widget.existingTransaction!.id, // Use the original ID
+                  amount: amount,
+                  note: note,
+                  date: selectedDate,
+                  categoryName: category.name, // The newly selected category name
+                  isIncome: isIncome,
+                  icon: category.iconCodePoint, // The newly selected category icon
+                );
+                // The 'key' from HiveObject will be preserved automatically
+                updatedTransaction.id = widget.existingTransaction!.id;
+                context.read<TransactionBloc>().add(UpdateTransaction(updatedTransaction));
+              } else {
+                // ADD NEW TRANSACTION (your existing logic)
+                final newTransaction = TransactionModel(
                   id: DateTime.now().millisecondsSinceEpoch.toString(),
                   amount: amount,
                   note: note,
                   date: selectedDate,
                   categoryName: category.name,
                   isIncome: isIncome,
-                  icon: category.iconCodePoint);
+                  icon: category.iconCodePoint,
+                );
+                context.read<TransactionBloc>().add(AddTransaction(newTransaction));
+              }
 
-              context.read<TransactionBloc>().add(AddTransaction(transaction));
-              Navigator.pop(context);
+              Navigator.pop(context); // Close bottom sheet
+              // If editing, pop twice to go back to home screen
+              if (widget.existingTransaction != null) {
+                Navigator.pop(context);
+              }
             },
             child: const Text("Add Transaction"),
           ),

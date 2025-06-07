@@ -48,18 +48,18 @@ class HiveManager {
   static Box<CategoryModel> get _categoryBox => Hive.box<CategoryModel>(categoriesBoxName);
 
   static Future<void> addCategory(CategoryModel category) async {
-    await _categoryBox.put(category.id, category);
+    await _categoryBox.add(category);
   }
 
   static List<CategoryModel> getAllCategories() {
     return _categoryBox.values.toList();
   }
 
-  static Future<void> deleteCategory(String id) async {
+  static Future<void> deleteCategory(int id) async {
     await _categoryBox.delete(id);
   }
 
   static Future<void> updateCategory(CategoryModel category) async {
-    await _categoryBox.put(category.id, category);
+    await category.save();
   }
 }
