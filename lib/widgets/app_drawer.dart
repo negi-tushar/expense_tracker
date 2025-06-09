@@ -32,9 +32,9 @@ class AppDrawer extends StatelessWidget {
           _buildMenuItem(context, icon: Icons.home, title: "Home", id: "home"),
           _buildMenuItem(context, icon: Icons.category, title: "Manage Categories", id: "categories"),
           _buildMenuItem(context, icon: Icons.bar_chart, title: "Reports", id: "reports"),
-          _buildMenuItem(context, icon: Icons.settings, title: "Settings", id: "settings"),
+          // _buildMenuItem(context, icon: Icons.settings, title: "Settings", id: "settings"),
           const Divider(),
-          _buildMenuItem(context, icon: Icons.info_outline, title: "About", id: "about"),
+          // _buildMenuItem(context, icon: Icons.info_outline, title: "About", id: "about"),
         ],
       ),
     );

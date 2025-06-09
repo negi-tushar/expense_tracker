@@ -1,6 +1,7 @@
 import 'package:expense_tracker/blocs/bloc/category_bloc.dart';
 import 'package:expense_tracker/blocs/bloc/category_event.dart';
 import 'package:expense_tracker/blocs/transactions/transaction_bloc.dart';
+import 'package:expense_tracker/constants/theme.dart';
 import 'package:expense_tracker/screens/add_category_screen.dart';
 import 'package:expense_tracker/screens/homescreen.dart';
 import 'package:expense_tracker/screens/reports_screen.dart';
@@ -31,7 +32,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Expensely',
-      theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
+      theme: AppTheme.lightTheme,
       initialRoute: '/',
       themeMode: ThemeMode.light,
       routes: {

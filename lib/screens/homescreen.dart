@@ -2,6 +2,7 @@ import 'package:expense_tracker/blocs/transactions/transaction_bloc.dart';
 import 'package:expense_tracker/blocs/transactions/transaction_event.dart';
 import 'package:expense_tracker/blocs/transactions/transaction_state.dart';
 import 'package:expense_tracker/models/transaction_model.dart';
+import 'package:expense_tracker/screens/add_category_screen.dart';
 import 'package:expense_tracker/screens/category_screen.dart';
 import 'package:expense_tracker/widgets/app_drawer.dart';
 import 'package:flutter/material.dart';
@@ -49,7 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
               // Already on home, just close drawer
               break;
             case "categories":
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const Text("data")));
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const AddCategoryScreen()));
               break;
             case "reports":
               Navigator.pushNamed(context, '/reports');

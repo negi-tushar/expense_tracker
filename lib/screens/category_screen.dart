@@ -22,27 +22,21 @@ class CategorySelectionScreen extends StatefulWidget {
 
 class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
   bool isIncome = false;
-
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
   DateTime selectedDate = DateTime.now();
 
+  CategoryModel? _selectedCategory;
+  bool _isInitialLoad = true;
+
   @override
   void initState() {
     super.initState();
-    // If we are editing, pre-fill the state from the transaction
     if (widget.existingTransaction != null) {
       final txn = widget.existingTransaction!;
-      setState(() {
-        isIncome = txn.isIncome;
-        // The rest of the data will be pre-filled when the bottom sheet is shown
-      });
+      isIncome = txn.isIncome;
     }
   }
-
-  // REMOVED: No longer need local lists
-  // final List<CategoryModel> expenseCategories = [];
-  // final List<CategoryModel> incomeCategories = [];
 
   @override
   void dispose() {
@@ -53,13 +47,10 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // REMOVED: This logic moves inside the BlocBuilder
-    // final categories = isIncome ? incomeCategories : expenseCategories;
-
     return BlocListener<TransactionBloc, TransactionState>(
       listener: (context, state) {
         if (state is TransactionLoaded) {
-          Navigator.of(context).popUntil((route) => route.isFirst); // Pop back to HomeScreen
+          Navigator.of(context).popUntil((route) => route.isFirst);
         }
       },
       child: Scaffold(
@@ -70,27 +61,35 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
               icon: const Icon(Icons.add),
               tooltip: "Add Category",
               onPressed: () {
-                // Assuming you have a named route for AddCategoryScreen
                 Navigator.push(context, MaterialPageRoute(builder: (context) => const AddCategoryScreen()));
               },
             ),
           ],
         ),
-        // MODIFIED: Wrap the body's content with a BlocBuilder
         body: BlocBuilder<CategoryBloc, CategoryState>(
           builder: (context, state) {
-            // Handle Loading State
             if (state is CategoryLoading || state is CategoryInitial) {
               return const Center(child: CircularProgressIndicator());
             }
 
-            // Handle Error State
             if (state is CategoryError) {
               return Center(child: Text('Error: ${state.message}'));
             }
 
-            // Handle Loaded State
             if (state is CategoryLoaded) {
+              if (_isInitialLoad && widget.existingTransaction != null) {
+                final categoriesForTxn =
+                    widget.existingTransaction!.isIncome ? state.incomeCategories : state.expenseCategories;
+                try {
+                  _selectedCategory = categoriesForTxn.firstWhere(
+                    (cat) => cat.name == widget.existingTransaction!.categoryName,
+                  );
+                } catch (e) {
+                  _selectedCategory = null;
+                }
+                _isInitialLoad = false;
+              }
+
               final categories = isIncome ? state.incomeCategories : state.expenseCategories;
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -106,13 +105,13 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
                               style: GoogleFonts.poppins(color: Colors.grey),
                             ),
                           )
-                        : _buildCategoryWrap(categories),
+                        // MODIFIED: Calling the new GridView method
+                        : _buildCategoryGrid(categories),
                   ),
                 ],
               );
             }
 
-            // Fallback for any other state
             return const Center(child: Text("Something went wrong."));
           },
         ),
@@ -132,6 +131,7 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
         onPressed: (index) {
           setState(() {
             isIncome = index == 1;
+            _selectedCategory = null;
           });
         },
         children: [
@@ -142,22 +142,62 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
     );
   }
 
-  Widget _buildCategoryWrap(List<CategoryModel> categories) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Wrap(
-        spacing: 16.0,
-        runSpacing: 16.0,
-        alignment: WrapAlignment.center,
-        runAlignment: WrapAlignment.center,
-        children: categories.map((category) {
-          return GestureDetector(
-            onTap: () => _showAddTransactionSheet(category),
-            onLongPress: () {
-              context.read<CategoryBloc>().add(DeleteCategory(category.key));
-            },
+  // REPLACED: _buildCategoryWrap is now _buildCategoryGrid
+  Widget _buildCategoryGrid(List<CategoryModel> categories) {
+    return GridView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 5),
+      itemCount: categories.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 4, // Number of columns
+        crossAxisSpacing: 10.0, // Horizontal space between items
+        mainAxisSpacing: 10.0, // Vertical space between items
+        childAspectRatio: 1.0, // Makes the cells square
+      ),
+      itemBuilder: (context, index) {
+        final category = categories[index];
+        final isSelected = _selectedCategory?.key == category.key;
+
+        return GestureDetector(
+          onTap: () async {
+            setState(() {
+              _selectedCategory = category;
+            });
+            await _showAddTransactionSheet(category);
+            setState(() {
+              _selectedCategory = null;
+            });
+          },
+          onLongPress: () {
+            // You can add your confirmation dialog back here if you wish
+            showDialog(
+              context: context,
+              builder: (dialogContext) => AlertDialog(
+                title: const Text('Delete Category'),
+                content: Text("Are you sure you want to delete the '${category.name}' category?"),
+                actions: [
+                  TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+                  TextButton(
+                    onPressed: () {
+                      context.read<CategoryBloc>().add(DeleteCategory(category.key));
+                      Navigator.pop(dialogContext);
+                    },
+                    child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                  ),
+                ],
+              ),
+            );
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              color: isSelected ? Colors.black.withOpacity(0.1) : Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isSelected ? Colors.black : Colors.grey.shade300,
+                width: 1.5,
+              ),
+            ),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
                   IconData(category.iconCodePoint, fontFamily: category.fontFamily ?? 'MaterialIcons'),
@@ -169,31 +209,30 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
                   category.name,
                   style: GoogleFonts.poppins(fontSize: 13),
                   textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
-          );
-        }).toList(),
-      ),
+          ),
+        );
+      },
     );
   }
 
-  // _showAddTransactionSheet and _buildTransactionForm methods remain the same...
-  void _showAddTransactionSheet(CategoryModel category) {
-    // If we are editing, pre-fill the controllers
+  Future<void> _showAddTransactionSheet(CategoryModel category) async {
+    // ... This method remains unchanged
     if (widget.existingTransaction != null) {
       final txn = widget.existingTransaction!;
       _amountController.text = txn.amount.toString();
       _noteController.text = txn.note;
       selectedDate = txn.date;
     } else {
-      // If adding a new one, clear the controllers
       _amountController.clear();
       _noteController.clear();
       selectedDate = DateTime.now();
     }
-
-    showModalBottomSheet(
+    await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
@@ -211,7 +250,7 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
             children: [
               Center(
                 child: Text(
-                  "Add ${category.name} Transaction",
+                  "${widget.existingTransaction != null ? 'Update' : 'Add'} ${category.name} Transaction",
                   style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
               ),
@@ -225,6 +264,7 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
   }
 
   Widget _buildTransactionForm(BuildContext context, CategoryModel category) {
+    // ... This method remains unchanged
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -277,30 +317,25 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
             onPressed: () {
               final amount = double.tryParse(_amountController.text) ?? 0.0;
               final note = _noteController.text.trim();
-
               if (amount <= 0) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text("Please enter a valid amount")),
                 );
                 return;
               }
-
               if (widget.existingTransaction != null) {
-                // UPDATE EXISTING TRANSACTION
                 final updatedTransaction = TransactionModel(
-                  id: widget.existingTransaction!.id, // Use the original ID
+                  id: widget.existingTransaction!.id,
                   amount: amount,
                   note: note,
                   date: selectedDate,
-                  categoryName: category.name, // The newly selected category name
+                  categoryName: category.name,
                   isIncome: isIncome,
-                  icon: category.iconCodePoint, // The newly selected category icon
+                  icon: category.iconCodePoint,
                 );
-                // The 'key' from HiveObject will be preserved automatically
-                updatedTransaction.id = widget.existingTransaction!.id;
+                updatedTransaction.id = widget.existingTransaction!.key;
                 context.read<TransactionBloc>().add(UpdateTransaction(updatedTransaction));
               } else {
-                // ADD NEW TRANSACTION (your existing logic)
                 final newTransaction = TransactionModel(
                   id: DateTime.now().millisecondsSinceEpoch.toString(),
                   amount: amount,
@@ -312,14 +347,12 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
                 );
                 context.read<TransactionBloc>().add(AddTransaction(newTransaction));
               }
-
-              Navigator.pop(context); // Close bottom sheet
-              // If editing, pop twice to go back to home screen
+              Navigator.pop(context);
               if (widget.existingTransaction != null) {
                 Navigator.pop(context);
               }
             },
-            child: const Text("Add Transaction"),
+            child: Text(widget.existingTransaction != null ? 'Update Transaction' : 'Add Transaction'),
           ),
         ),
         const SizedBox(height: 16),
