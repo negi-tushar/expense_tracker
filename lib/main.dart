@@ -6,13 +6,17 @@ import 'package:expense_tracker/screens/add_category_screen.dart';
 import 'package:expense_tracker/screens/homescreen.dart';
 import 'package:expense_tracker/screens/reports_screen.dart';
 import 'package:expense_tracker/screens/splash_screen.dart';
+import 'package:expense_tracker/screens/user_profile_screen.dart';
 import 'package:expense_tracker/services/hive_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:expense_tracker/services/shared_prefrence_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await HiveManager.init();
+  await SharedPrefService.init();
+
   runApp(MultiBlocProvider(providers: [
     BlocProvider<TransactionBloc>(
       create: (_) => TransactionBloc(),
@@ -37,6 +41,7 @@ class MyApp extends StatelessWidget {
       themeMode: ThemeMode.light,
       routes: {
         '/': (context) => SplashScreen(),
+        '/userProfile': (context) => const UserProfileScreen(),
         '/home': (context) => const HomeScreen(),
         '/reports': (context) => const ReportScreen(),
         '/addCategory': (context) => const AddCategoryScreen()

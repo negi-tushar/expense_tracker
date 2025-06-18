@@ -1,6 +1,7 @@
 import 'package:expense_tracker/blocs/transactions/transaction_bloc.dart';
 import 'package:expense_tracker/blocs/transactions/transaction_event.dart';
 import 'package:expense_tracker/blocs/transactions/transaction_state.dart';
+import 'package:expense_tracker/constants/extension.dart';
 import 'package:expense_tracker/models/transaction_model.dart';
 import 'package:expense_tracker/screens/add_category_screen.dart';
 import 'package:expense_tracker/screens/category_screen.dart';
@@ -39,9 +40,7 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
         title: Text("Expense Tracker", style: GoogleFonts.poppins(fontSize: 18)),
-        backgroundColor: Colors.transparent,
-        foregroundColor: Colors.black87,
-        elevation: 0,
+        elevation: 1,
       ),
       drawer: AppDrawer(
         onSelectMenu: (menuId) {
@@ -87,8 +86,10 @@ class _HomeScreenState extends State<HomeScreen> {
             if (state is TransactionLoading) {
               return const Center(child: CircularProgressIndicator());
             } else if (state is TransactionLoaded) {
-              final transactions =
-                  state.transactions.where((items) => items.date.month == DateTime.now().month).toList();
+              final transactions = state.transactions
+                  .where(
+                      (items) => (items.date.month == DateTime.now().month && items.date.year == DateTime.now().year))
+                  .toList();
               final totalIncome = _getTotalIncome(transactions);
               final totalExpense = _getTotalExpense(transactions);
               final totalBalance = totalIncome - totalExpense;
@@ -109,7 +110,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        "₹${totalBalance.toStringAsFixed(2)}",
+                        "₹${totalBalance.toStringAsFixed(2).toIndianNumberFormat()}",
                         style: GoogleFonts.poppins(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
@@ -239,7 +240,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         )
                       : null,
                   trailing: Text(
-                    "${txn.isIncome ? '+' : '-'}₹${txn.amount.toStringAsFixed(2)}",
+                    "${txn.isIncome ? '+' : '-'}₹${txn.amount.toStringAsFixed(2).toIndianNumberFormat()}",
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
@@ -268,7 +269,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 6),
               Text(title, style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700])),
               const SizedBox(height: 6),
-              Text("₹${amount.toStringAsFixed(2)}",
+              Text("₹${amount.toStringAsFixed(2).toIndianNumberFormat()}",
                   style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
             ],
           ),

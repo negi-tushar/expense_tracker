@@ -1,3 +1,5 @@
+import 'package:expense_tracker/constants/constants.dart';
+import 'package:expense_tracker/services/shared_prefrence_service.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -21,11 +23,15 @@ class AppDrawer extends StatelessWidget {
                 const CircleAvatar(
                   radius: 30,
                   backgroundColor: Colors.white,
-                  child: Icon(Icons.person, size: 40, color: Colors.black87),
+                  child: Image(
+                    image: AssetImage('assets/img/man.png'),
+                    height: 45,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text("Welcome!", style: GoogleFonts.poppins(color: Colors.white, fontSize: 18)),
-                Text("user@example.com", style: GoogleFonts.poppins(color: Colors.white70, fontSize: 14)),
+                Text(SharedPrefService.getData(userNameKey) ?? "---",
+                    style: GoogleFonts.poppins(color: Colors.white70, fontSize: 14)),
               ],
             ),
           ),
