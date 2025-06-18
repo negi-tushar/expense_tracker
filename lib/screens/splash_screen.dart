@@ -1,3 +1,5 @@
+import 'package:expense_tracker/constants/constants.dart';
+import 'package:expense_tracker/services/shared_prefrence_service.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 
@@ -11,7 +13,11 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
     Timer(const Duration(seconds: 1), () {
-      Navigator.of(context).pushReplacementNamed('/home');
+      if ((SharedPrefService.getData(userNameKey) ?? "").isNotEmpty) {
+        Navigator.of(context).pushReplacementNamed('/home');
+      } else {
+        Navigator.of(context).pushReplacementNamed('/userProfile');
+      }
     });
   }
 

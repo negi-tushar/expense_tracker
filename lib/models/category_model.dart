@@ -15,10 +15,16 @@ class CategoryModel extends HiveObject {
   // Optionally store fontFamily if you want, else use default Icons font
   @HiveField(2)
   String? fontFamily;
-  @HiveField(3)
-  int id;
 
-  CategoryModel({required this.name, required this.iconCodePoint, this.fontFamily, required this.id});
+  @HiveField(4)
+  bool isIncome;
+
+  CategoryModel({
+    required this.name,
+    required this.isIncome,
+    required this.iconCodePoint,
+    this.fontFamily,
+  });
 
   // Helper to get IconData back easily
   IconData get iconData => IconData(iconCodePoint, fontFamily: fontFamily ?? 'MaterialIcons');
