@@ -13,7 +13,7 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
     Timer(const Duration(seconds: 1), () {
-      if (SharedPrefService.getData(userNameKey).isNotEmpty) {
+      if ((SharedPrefService.getData(userNameKey) ?? "").isNotEmpty) {
         Navigator.of(context).pushReplacementNamed('/home');
       } else {
         Navigator.of(context).pushReplacementNamed('/userProfile');

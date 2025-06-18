@@ -20,17 +20,23 @@ class CategorySelectionScreen extends StatefulWidget {
   State<CategorySelectionScreen> createState() => _CategorySelectionScreenState();
 }
 
-class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
+class _CategorySelectionScreenState extends State<CategorySelectionScreen> with SingleTickerProviderStateMixin {
   bool isIncome = false;
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
   DateTime selectedDate = DateTime.now();
+  late AnimationController _animationController;
 
   CategoryModel? _selectedCategory;
   bool _isInitialLoad = true;
 
   @override
   void initState() {
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _animationController.forward();
     super.initState();
     if (widget.existingTransaction != null) {
       final txn = widget.existingTransaction!;
@@ -42,6 +48,7 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
   void dispose() {
     _amountController.dispose();
     _noteController.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
@@ -133,6 +140,8 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
             isIncome = index == 1;
             _selectedCategory = null;
           });
+          _animationController.reset();
+          _animationController.forward();
         },
         children: [
           Text("Expense", style: GoogleFonts.poppins()),
@@ -187,34 +196,45 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
               ),
             );
           },
-          child: Container(
-            decoration: BoxDecoration(
-              color: isSelected ? Colors.black.withOpacity(0.1) : Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isSelected ? Colors.black : Colors.grey.shade300,
-                width: 1.5,
-              ),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  IconData(category.iconCodePoint, fontFamily: category.fontFamily ?? 'MaterialIcons'),
-                  size: 32,
-                  color: Colors.black87,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  category.name,
-                  style: GoogleFonts.poppins(fontSize: 13),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
+          child: AnimatedBuilder(
+              animation: _animationController,
+              builder: (context, child) {
+                return FadeTransition(
+                  opacity: _animationController,
+                  child: SlideTransition(
+                    position:
+                        Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(_animationController),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: isSelected ? Colors.black.withOpacity(0.1) : Colors.transparent,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isSelected ? Colors.black : Colors.grey.shade300,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            IconData(category.iconCodePoint, fontFamily: category.fontFamily ?? 'MaterialIcons'),
+                            size: 32,
+                            color: Colors.black87,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            category.name,
+                            style: GoogleFonts.poppins(fontSize: 13),
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }),
         );
       },
     );
